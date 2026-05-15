@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String       @id @default(uuid())
+  email            String       @unique
+  password         String
+  nama_lengkap     String
+  role             Role         @default(GURU)
+  
+  // Data Kepegawaian
+  nip              String?
+  nuptk            String?
+  nik              String?
+  gelar_depan      String?
+  gelar_belakang   String?
+  status_pegawai   String?
+  pangkat_golongan String?
+
+  // Biodata
+  tempat_lahir     String?
+  tanggal_lahir    DateTime?
+  jenis_kelamin    String?
+  agama            String?
+  alamat_lengkap   String?
+  no_hp            String?
+
+  // Face Biometrics (Storing Float32Array as JSON)
+  face_descriptor  Json?
+
+  attendances      Attendance[]
+}
+
+enum Role {
+  ADMIN
+  GURU
+}
+
+model Attendance {
+  id              String    @id @default(uuid())
+  user_id         String
+  user            User      @relation(fields: [user_id], references: [id])
+  tanggal         DateTime  // Tanggal presensi (tanpa jam untuk index)
+  
+  // Data Presensi Masuk
+  jam_masuk       DateTime?
+  lat_masuk       Float?
+  lng_masuk       Float?
+  dist_masuk      Float?
+  catatan_masuk   String?   // Status Radius Masuk
+  ket_masuk       String?   // Keterangan Terlambat dll
+  
+  // Data Presensi Pulang
+  jam_pulang      DateTime?
+  lat_pulang      Float?
+  lng_pulang      Float?
+  dist_pulang     Float?
+  catatan_pulang  String?   // Status Radius Pulang
+  
+  status          String    // Hadir, Izin, Sakit, Dinas Luar
+  keterangan      String?   // Alasan Izin/Sakit (Manual)
+  tipe_input      String    @default("Wajah") // Wajah, Manual_Admin
+
+  @@unique([user_id, tanggal])
+}
+
+model Settings {
+  id          String @id @default("global") // single row
+  nama_sistem String @default("Sistem Presensi")
+  jam_masuk   String @default("07:00")
+  latitude    Float
+  longitude   Float
+  radius      Int    // dalam meter
+}
