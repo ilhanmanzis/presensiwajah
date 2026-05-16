@@ -25,16 +25,27 @@ cd presensi
 npm install
 ```
 
-### 3. Konfigurasi Database & Environment
-Buat file `.env` di folder root:
-```env
-# Ambil Connection String dari Neon.tech
-DATABASE_URL="postgresql://user:password@host-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
-```
+### 3. Tarik Konfigurasi Database ke Komputer Lokal Anda
+Agar Anda bisa coding dan mengakses database Neon dari laptop Anda sendiri, Anda harus menarik (pull) environment variables dari Vercel ke project lokal Anda.
+1. Buka terminal di folder project Next.js Anda.
+2. Login ke Vercel CLI dengan menjalankan:
+      ```
+         npx vercel login
+      ```   
+3. Hubungkan folder lokal Anda dengan project di Vercel:
+      ```
+         npx vercel link
+      ```
+4. Pilih "Yes" untuk setup, pilih akun Anda, dan pilih project yang baru saja d  ibuat).
+5. Tarik variabel koneksi database:
+      ```
+         npx vercel env pull .env.local
+      ```
 
 ### 4. Setup Database (Prisma)
 Jalankan perintah ini untuk sinkronisasi tabel dan mengisi data awal (Admin):
 ```bash
+
 # Membuat tabel di database
 npx prisma db push
 
