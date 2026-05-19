@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
+import { formatWIB } from "@/lib/dateUtils";
 import { Calendar, Filter, FileText, ChevronRight, Clock, MapPin, UserCheck, AlertCircle } from "lucide-react";
 
 export default function PresensiTableClient({ initialData, selectedDate }) {
@@ -81,7 +80,7 @@ export default function PresensiTableClient({ initialData, selectedDate }) {
         <div className="px-8 py-6 border-b border-surface-border flex items-center justify-between bg-surface">
           <h2 className="text-xl font-black text-foreground tracking-tight flex items-center gap-3">
             <div className="w-2 h-6 bg-brand-primary rounded-full"></div>
-            Data Presensi: {format(new Date(selectedDate), "dd MMMM yyyy", { locale: id })}
+            Data Presensi: {formatWIB(new Date(selectedDate), "dd MMMM yyyy")}
           </h2>
         </div>
 
@@ -128,7 +127,7 @@ export default function PresensiTableClient({ initialData, selectedDate }) {
                       {teacher.jam_masuk ? (
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-black text-foreground">{format(new Date(teacher.jam_masuk), "HH:mm")}</span>
+                            <span className="text-sm font-black text-foreground">{formatWIB(teacher.jam_masuk, "HH:mm")}</span>
                             <span className="text-[10px] font-bold text-nav-text opacity-60">WIB</span>
                           </div>
                           <div className="flex flex-wrap gap-1 mt-1">
@@ -152,7 +151,7 @@ export default function PresensiTableClient({ initialData, selectedDate }) {
                       {teacher.jam_pulang ? (
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-black text-foreground">{format(new Date(teacher.jam_pulang), "HH:mm")}</span>
+                            <span className="text-sm font-black text-foreground">{formatWIB(teacher.jam_pulang, "HH:mm")}</span>
                             <span className="text-[10px] font-bold text-nav-text opacity-60">WIB</span>
                           </div>
                           <div className="flex flex-wrap gap-1 mt-1">

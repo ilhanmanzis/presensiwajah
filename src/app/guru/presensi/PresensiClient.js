@@ -25,6 +25,7 @@ export default function PresensiClient({ savedDescriptor, settings, initialAtten
 
   // Face API reference (loaded dynamically)
   const faceapiRef = useRef(null);
+  const isSubmittingRef = useRef(false);
 
   // GPS States
   const [userPos, setUserPos] = useState(null);
@@ -119,12 +120,30 @@ export default function PresensiClient({ savedDescriptor, settings, initialAtten
     }
   };
 
+  const requestCameraPermission = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      stream.getTracks().forEach((track) => track.stop());
+      if (navigator.permissions && navigator.permissions.query) {
+        const result = await navigator.permissions.query({ name: 'camera' });
+        setCameraPermission(result.state);
+      } else {
+        setCameraPermission("granted");
+      }
+    } catch (err) {
+      console.error("Camera permission error:", err);
+      setCameraPermission("denied");
+    }
+  };
+
   const startCamera = () => {
+    isSubmittingRef.current = false;
     setIsCameraActive(true);
     setFaceStatus("Menunggu kamera...");
   };
 
   const stopCamera = () => {
+    isSubmittingRef.current = false;
     if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     setIsCameraActive(false);
@@ -160,13 +179,14 @@ export default function PresensiClient({ savedDescriptor, settings, initialAtten
 
   const autoVerifyFace = async () => {
     const faceapi = faceapiRef.current;
-    if (!videoRef.current || !savedDescriptor || !faceapi || !isCameraActive || isProcessing) return;
+    if (!videoRef.current || !savedDescriptor || !faceapi || !isCameraActive || isProcessing || isSubmittingRef.current) return;
     try {
       const detection = await faceapi.detectSingleFace(videoRef.current, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.7 })).withFaceLandmarks().withFaceDescriptor();
       if (detection) {
         const savedFloatArray = new Float32Array(savedDescriptor);
         const distance = faceapi.euclideanDistance(detection.descriptor, savedFloatArray);
         if (distance < 0.45) {
+          isSubmittingRef.current = true;
           setIsProcessing(true);
           setFaceStatus("Wajah Cocok! Menyimpan...");
           const res = await savePresensiAction(userPos.lat, userPos.lng, true);
@@ -176,6 +196,7 @@ export default function PresensiClient({ savedDescriptor, settings, initialAtten
           } else {
             setFaceStatus(`Gagal: ${res.error}`);
             setIsProcessing(false);
+            isSubmittingRef.current = false;
           }
         } else {
           setFaceStatus("Wajah tidak cocok, coba lagi.");
@@ -244,7 +265,7 @@ export default function PresensiClient({ savedDescriptor, settings, initialAtten
                   </p>
                   {isModelLoaded && cameraPermission !== 'granted' && (
                     <button
-                      onClick={() => startCamera().then(() => stopCamera())}
+                      onClick={requestCameraPermission}
                       className="text-[10px] bg-brand-primary text-white px-3 py-1.5 rounded-lg font-bold hover:bg-purple-700 transition-all cursor-pointer shadow-lg shadow-brand-primary/20"
                     >
                       Izinkan

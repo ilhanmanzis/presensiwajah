@@ -1,7 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { getSession } from "@/lib/auth";
-import { format } from "date-fns";
-import { id as localeId } from "date-fns/locale";
+import { formatWIB } from "@/lib/dateUtils";
 
 const prisma = new PrismaClient();
 
@@ -21,8 +20,8 @@ export default async function GuruDashboardPage() {
 
   if (!user) return <div>User not found</div>;
 
-  const targetDateStr = format(new Date(), "yyyy-MM-dd");
-  const todayAtt = user.attendances.find(att => format(new Date(att.tanggal), "yyyy-MM-dd") === targetDateStr);
+  const targetDateStr = formatWIB(new Date(), "yyyy-MM-dd");
+  const todayAtt = user.attendances.find(att => formatWIB(att.tanggal, "yyyy-MM-dd") === targetDateStr);
   
   const hasIn = !!todayAtt?.jam_masuk;
   const hasOut = !!todayAtt?.jam_pulang;
@@ -69,7 +68,7 @@ export default async function GuruDashboardPage() {
         </h2>
         <div className="flex items-center justify-between p-6 rounded-2xl bg-background border border-surface-border transition-all hover:border-brand-primary/20">
           <div>
-            <p className="text-xs font-bold text-nav-text uppercase tracking-wider">{format(new Date(), "EEEE, dd MMMM yyyy", { locale: localeId })}</p>
+            <p className="text-xs font-bold text-nav-text uppercase tracking-wider">{formatWIB(new Date(), "EEEE, dd MMMM yyyy")}</p>
             <p className={`text-xl font-extrabold mt-1 ${statusColor}`}>
               {statusText}
             </p>
@@ -95,7 +94,7 @@ export default async function GuruDashboardPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <p className="font-bold text-foreground group-hover:text-brand-primary transition-colors text-sm md:text-base">
-                      {format(new Date(att.tanggal), "dd MMM yyyy", { locale: localeId })}
+                      {formatWIB(att.tanggal, "dd MMM yyyy")}
                     </p>
                     <span className={`text-[9px] font-black uppercase tracking-tighter px-1.5 py-0.5 rounded border border-surface-border ${
                       att.jam_pulang ? "bg-green-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-nav-text"
@@ -106,12 +105,12 @@ export default async function GuruDashboardPage() {
                   <div className="flex flex-wrap items-center gap-x-3 mt-0.5">
                     {att.jam_masuk && (
                       <p className="text-[10px] md:text-xs font-medium text-nav-text">
-                        Masuk: {format(new Date(att.jam_masuk), "HH:mm")}
+                        Masuk: {formatWIB(att.jam_masuk, "HH:mm")} WIB
                       </p>
                     )}
                     {att.jam_pulang && (
                       <p className="text-[10px] md:text-xs font-medium text-nav-text">
-                        Pulang: {format(new Date(att.jam_pulang), "HH:mm")}
+                        Pulang: {formatWIB(att.jam_pulang, "HH:mm")} WIB
                       </p>
                     )}
                     {att.ket_masuk && att.ket_masuk !== "Tepat Waktu" && (

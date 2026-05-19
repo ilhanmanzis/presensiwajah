@@ -1,6 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
+import { formatWIB } from "@/lib/dateUtils";
 import DetailClient from "./DetailClient";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
@@ -84,7 +83,7 @@ export default async function PresensiDetailPage({ searchParams }) {
     where: { id: "global" }
   });
 
-  const formattedDate = format(new Date(dateStr), "dd MMMM yyyy", { locale: id });
+  const formattedDate = formatWIB(new Date(dateStr), "dd MMMM yyyy");
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">

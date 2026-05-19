@@ -1,7 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { Users, UserCheck, Clock, UserX } from "lucide-react";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
+import { formatWIB } from "@/lib/dateUtils";
 
 const prisma = new PrismaClient();
 
@@ -64,7 +63,7 @@ export default async function AdminDashboard() {
         <div className="px-5 py-2.5 bg-surface border border-surface-border rounded-2xl shadow-sm flex items-center gap-3">
           <div className="w-2 h-2 bg-brand-primary rounded-full animate-ping"></div>
           <p className="text-sm font-bold text-foreground">
-            {format(new Date(), "EEEE, dd MMMM yyyy", { locale: id })}
+            {formatWIB(new Date(), "EEEE, dd MMMM yyyy")}
           </p>
         </div>
       </div>
@@ -151,7 +150,7 @@ export default async function AdminDashboard() {
                         <td className="px-6 py-5 border-b border-surface-border">
                           {data.jam_masuk ? (
                             <div className="flex flex-col gap-1">
-                              <span className="text-sm font-black text-foreground">{format(new Date(data.jam_masuk), "HH:mm")} WIB</span>
+                              <span className="text-sm font-black text-foreground">{formatWIB(data.jam_masuk, "HH:mm")} WIB</span>
                               <div className="flex flex-wrap gap-1">
                                 {data.ket_masuk && data.ket_masuk !== "Tepat Waktu" && (
                                   <span className="px-2 py-0.5 bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400 rounded text-[9px] font-black uppercase border border-red-100 dark:border-red-500/20">{data.ket_masuk}</span>
@@ -168,7 +167,7 @@ export default async function AdminDashboard() {
                         <td className="px-6 py-5 border-b border-surface-border">
                           {data.jam_pulang ? (
                             <div className="flex flex-col gap-1">
-                              <span className="text-sm font-black text-foreground">{format(new Date(data.jam_pulang), "HH:mm")} WIB</span>
+                              <span className="text-sm font-black text-foreground">{formatWIB(data.jam_pulang, "HH:mm")} WIB</span>
                               <div className="flex flex-wrap gap-1">
                                 {data.catatan_pulang && data.catatan_pulang !== "Di dalam radius" && (
                                   <span className="px-2 py-0.5 bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 rounded text-[9px] font-black uppercase border border-amber-100 dark:border-amber-500/20">{data.catatan_pulang}</span>
@@ -215,7 +214,7 @@ export default async function AdminDashboard() {
                         <p className="text-[9px] font-black text-nav-text uppercase tracking-widest opacity-50 mb-1">Masuk</p>
                         {data.jam_masuk ? (
                           <div className="flex flex-col gap-1">
-                            <span className="text-xs font-black text-foreground">{format(new Date(data.jam_masuk), "HH:mm")}</span>
+                            <span className="text-xs font-black text-foreground">{formatWIB(data.jam_masuk, "HH:mm")} WIB</span>
                             {data.ket_masuk && data.ket_masuk !== "Tepat Waktu" && (
                               <span className="text-[8px] font-black text-red-500 uppercase">{data.ket_masuk}</span>
                             )}
@@ -229,7 +228,7 @@ export default async function AdminDashboard() {
                         <p className="text-[9px] font-black text-nav-text uppercase tracking-widest opacity-50 mb-1">Pulang</p>
                         {data.jam_pulang ? (
                           <div className="flex flex-col gap-1">
-                            <span className="text-xs font-black text-foreground">{format(new Date(data.jam_pulang), "HH:mm")}</span>
+                            <span className="text-xs font-black text-foreground">{formatWIB(data.jam_pulang, "HH:mm")} WIB</span>
                             {data.catatan_pulang && data.catatan_pulang !== "Di dalam radius" && (
                               <span className="text-[8px] font-black text-amber-500 uppercase">Luar Radius</span>
                             )}

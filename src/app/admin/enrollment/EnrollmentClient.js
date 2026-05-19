@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useTransition } from "react";
-import { Camera, CheckCircle, AlertCircle, Save, X, ZoomIn, ZoomOut, Info, RefreshCw, Trash2, Edit2, UserCheck, ShieldAlert, User, Search, AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, Lock, Eye, EyeOff } from "lucide-react";
+import { Camera, CheckCircle, AlertCircle, Save, X, ZoomIn, ZoomOut, Info, RefreshCw, Trash2, Edit2, UserCheck, ShieldAlert, User, Search, AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, Lock, Eye, EyeOff, Upload, FileImage, Image } from "lucide-react";
 import { enrollFaceAction, deleteFaceAction } from "@/app/actions/admin";
 
 export default function EnrollmentClient({ users }) {
@@ -32,6 +32,13 @@ export default function EnrollmentClient({ users }) {
   const [showPassword, setShowPassword] = useState(false);
 
   const [isPending, startTransition] = useTransition();
+
+  // Photo file upload states
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadImage, setUploadImage] = useState(null);
+  const [uploadDescriptor, setUploadDescriptor] = useState(null);
+  const [uploadError, setUploadError] = useState("");
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
 
 
 
@@ -291,6 +298,76 @@ export default function EnrollmentClient({ users }) {
     setIsSaving(false);
   };
 
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadImage(null);
+    setUploadDescriptor(null);
+    setUploadError("");
+    setIsProcessingFile(true);
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const imageUrl = event.target.result;
+        setUploadImage(imageUrl);
+
+        if (!faceapiRef.current || !isModelLoaded) {
+          setUploadError("Model biometrik belum siap. Silakan tunggu.");
+          setIsProcessingFile(false);
+          return;
+        }
+
+        const img = new window.Image();
+        img.src = imageUrl;
+        img.onload = async () => {
+          try {
+            const faceapi = faceapiRef.current;
+            const detection = await faceapi.detectSingleFace(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
+              .withFaceLandmarks()
+              .withFaceDescriptor();
+
+            if (!detection) {
+              setUploadError("Wajah tidak terdeteksi pada gambar. Pastikan wajah terlihat jelas dan menghadap ke depan.");
+            } else {
+              setUploadDescriptor(Array.from(detection.descriptor));
+            }
+          } catch (err) {
+            console.error(err);
+            setUploadError("Terjadi kesalahan saat memproses gambar.");
+          } finally {
+            setIsProcessingFile(false);
+          }
+        };
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error(err);
+      setUploadError("Gagal membaca file.");
+      setIsProcessingFile(false);
+    }
+  };
+
+  const handleSaveUpload = async () => {
+    if (!selectedUser || !uploadDescriptor) return;
+    setIsSaving(true);
+    setUploadError("");
+
+    const res = await enrollFaceAction(selectedUser, uploadDescriptor);
+    if (res.success) {
+      setSuccess("Vektor wajah berhasil disimpan ke database dari file foto.");
+      setUploadImage(null);
+      setUploadDescriptor(null);
+      setSelectedUser("");
+      setShowUploadModal(false);
+      setTimeout(() => setSuccess(""), 5000);
+    } else {
+      setUploadError(res.error);
+    }
+    setIsSaving(false);
+  };
+
   const handleDeleteFace = (user) => {
     setUserToDelete(user);
     setShowDeleteModal(true);
@@ -425,14 +502,42 @@ export default function EnrollmentClient({ users }) {
               </div>
 
               {!capturedImage ? (
-                <button
-                  onClick={startScanning}
-                  disabled={!isModelLoaded || !selectedUser || isScanning}
-                  className="w-full py-4 bg-brand-primary hover:bg-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-brand-primary/20 transition-all flex justify-center items-center gap-3 cursor-pointer disabled:opacity-50"
-                >
-                  <Camera size={22} />
-                  {isScanning ? "Kamera Aktif..." : "Mulai Pindai Wajah"}
-                </button>
+                <div className="space-y-4">
+                  <button
+                    onClick={startScanning}
+                    disabled={!isModelLoaded || !selectedUser || isScanning}
+                    className="w-full py-4 bg-brand-primary hover:bg-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-brand-primary/20 transition-all flex justify-center items-center gap-3 cursor-pointer disabled:opacity-50"
+                  >
+                    <Camera size={22} />
+                    {isScanning ? "Kamera Aktif..." : "Mulai Pindai Wajah"}
+                  </button>
+
+                  <div className="flex items-center gap-3 py-1">
+                    <div className="h-[1px] bg-surface-border flex-1"></div>
+                    <span className="text-xs font-black text-nav-text uppercase tracking-widest opacity-60">atau</span>
+                    <div className="h-[1px] bg-surface-border flex-1"></div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!selectedUser) {
+                        setError("Silakan pilih guru terlebih dahulu!");
+                        return;
+                      }
+                      setError("");
+                      setShowUploadModal(true);
+                      setUploadImage(null);
+                      setUploadDescriptor(null);
+                      setUploadError("");
+                    }}
+                    disabled={!isModelLoaded || !selectedUser || isScanning}
+                    className="w-full py-3.5 border border-brand-primary hover:bg-brand-primary/5 dark:hover:bg-brand-primary/10 text-brand-primary font-bold rounded-xl transition-all flex justify-center items-center gap-3 cursor-pointer disabled:opacity-50"
+                  >
+                    <Upload size={20} />
+                    Registrasi lewat File Foto
+                  </button>
+                </div>
               ) : (
                 <div className="space-y-4 animate-in zoom-in-95 duration-300">
                   <div className="p-4 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 text-green-700 dark:text-green-400 rounded-xl flex items-center gap-3">
@@ -725,6 +830,119 @@ export default function EnrollmentClient({ users }) {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {/* Modal Upload Foto */}
+      {showUploadModal && (
+        <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-surface w-full max-w-lg rounded-[2rem] shadow-2xl border border-surface-border overflow-hidden">
+            <div className="p-6 border-b border-surface-border flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-brand-primary/10 text-brand-primary rounded-xl">
+                  <FileImage size={22} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-foreground">Upload File Foto</h3>
+                  <p className="text-xs text-nav-text">Registrasi wajah guru menggunakan gambar</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setShowUploadModal(false); setUploadImage(null); setUploadDescriptor(null); setUploadError(""); }}
+                className="p-2 text-nav-text hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Selected Teacher Info */}
+              <div className="p-4 bg-brand-primary/5 border border-brand-primary/10 rounded-2xl flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-brand-primary text-white flex items-center justify-center font-black">
+                  {selectedUserObj?.nama_lengkap?.charAt(0)}
+                </div>
+                <div>
+                  <p className="text-xs text-nav-text">Nama Guru:</p>
+                  <p className="text-sm font-bold text-foreground">{selectedUserObj?.nama_lengkap}</p>
+                </div>
+              </div>
+
+              {/* Upload area */}
+              <div className="space-y-4">
+                {!uploadImage ? (
+                  <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-surface-border hover:border-brand-primary dark:hover:border-brand-primary bg-background rounded-2xl cursor-pointer transition-all duration-300 group">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <div className="p-4 bg-brand-primary/5 rounded-full text-brand-primary mb-3 group-hover:scale-110 transition-transform">
+                        <Upload size={28} />
+                      </div>
+                      <p className="text-sm font-bold text-foreground">Pilih File Foto Guru</p>
+                      <p className="text-[11px] text-nav-text mt-1">PNG, JPG atau JPEG (Maks. 5MB)</p>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileChange}
+                    />
+                  </label>
+                ) : (
+                  <div className="relative rounded-2xl overflow-hidden border border-surface-border bg-slate-900 aspect-video flex items-center justify-center max-h-56">
+                    <img src={uploadImage} className="w-full h-full object-contain" alt="Uploaded Preview" />
+                    
+                    {!isProcessingFile && (
+                      <button
+                        onClick={() => { setUploadImage(null); setUploadDescriptor(null); setUploadError(""); }}
+                        className="absolute top-3 right-3 p-2 bg-red-600 hover:bg-red-700 text-white rounded-full transition-all cursor-pointer shadow-lg"
+                        title="Hapus Foto"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+
+                    {isProcessingFile && (
+                      <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-xs flex flex-col items-center justify-center gap-3 text-white">
+                        <RefreshCw className="animate-spin text-brand-primary" size={32} />
+                        <span className="text-xs font-bold tracking-wider uppercase animate-pulse">Mendeteksi Wajah...</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Status and Errors */}
+              {uploadDescriptor && (
+                <div className="p-4 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 text-green-700 dark:text-green-400 rounded-xl flex items-center gap-3 animate-in zoom-in-95 duration-200">
+                  <CheckCircle className="flex-shrink-0" size={22} />
+                  <div>
+                    <div className="font-bold text-xs md:text-sm">Wajah Terdeteksi!</div>
+                    <p className="text-[10px] md:text-xs opacity-85">Karakteristik biometrik berhasil dianalisis.</p>
+                  </div>
+                </div>
+              )}
+
+              {uploadError && (
+                <div className="p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-medium flex items-center gap-2 animate-in zoom-in-95 duration-200">
+                  <AlertCircle size={18} className="shrink-0" /> {uploadError}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-surface-border bg-slate-50/50 dark:bg-slate-900/30 flex gap-3">
+              <button
+                onClick={() => { setShowUploadModal(false); setUploadImage(null); setUploadDescriptor(null); setUploadError(""); }}
+                className="flex-1 py-3 border border-surface-border text-nav-text hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl font-medium transition-all cursor-pointer text-xs md:text-sm"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleSaveUpload}
+                disabled={isSaving || !uploadDescriptor || isProcessingFile}
+                className="flex-1 py-3 bg-brand-primary hover:bg-purple-700 text-white rounded-xl font-bold shadow-lg shadow-brand-primary/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 text-xs md:text-sm"
+              >
+                {isSaving ? <RefreshCw className="animate-spin" size={18} /> : <Save size={18} />}
+                Simpan Vektor Wajah
+              </button>
+            </div>
           </div>
         </div>
       )}

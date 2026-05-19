@@ -7,8 +7,7 @@ import {
   Download, AlertCircle, Info
 } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
+import { formatWIB } from "@/lib/dateUtils";
 import { 
   exportIndividualPDF, exportIndividualExcel, 
   exportRekapPDF, exportRekapExcel 
@@ -17,7 +16,7 @@ import {
 export default function LaporanClient({ teachers, settings }) {
   const [reportType, setReportType] = useState("individual"); // individual | rekap
   const [selectedTeacher, setSelectedTeacher] = useState("");
-  const [monthYear, setMonthYear] = useState(format(new Date(), "yyyy-MM"));
+  const [monthYear, setMonthYear] = useState(formatWIB(new Date(), "yyyy-MM"));
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isGeneratingExcel, setIsGeneratingExcel] = useState(false);
 

@@ -6,8 +6,7 @@ import {
   ChevronRight, Search, Plus, X, Clock, 
   UserCheck, AlertCircle, UserMinus 
 } from "lucide-react";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
+import { formatWIB } from "@/lib/dateUtils";
 import { saveManualAttendance, processManualCheckout } from "@/app/actions/attendanceActions";
 import { toast } from "react-hot-toast";
 
@@ -20,9 +19,9 @@ export default function InputPresensiClient({ teachers, initialCheckoutCandidate
   const [selectedTeacherId, setSelectedTeacherId] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [tanggal, setTanggal] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [jamMasuk, setJamMasuk] = useState(format(new Date(), "HH:mm"));
-  const [jamPulang, setJamPulang] = useState(format(new Date(), "HH:mm"));
+  const [tanggal, setTanggal] = useState(formatWIB(new Date(), "yyyy-MM-dd"));
+  const [jamMasuk, setJamMasuk] = useState(formatWIB(new Date(), "HH:mm"));
+  const [jamPulang, setJamPulang] = useState(formatWIB(new Date(), "HH:mm"));
   const [autoCheckout, setAutoCheckout] = useState(false);
   const [keterangan, setKeterangan] = useState("");
 
@@ -100,7 +99,7 @@ export default function InputPresensiClient({ teachers, initialCheckoutCandidate
         <div className="px-5 py-2.5 bg-surface border border-surface-border rounded-2xl shadow-sm flex items-center gap-3">
           <Calendar size={18} className="text-brand-primary" />
           <p className="text-sm font-bold text-foreground">
-            {format(new Date(), "EEEE, dd MMMM yyyy", { locale: id })}
+            {formatWIB(new Date(), "EEEE, dd MMMM yyyy")}
           </p>
         </div>
       </div>
@@ -364,7 +363,7 @@ function ActionCard({ title, description, icon, color, onClick }) {
 }
 
 function CheckoutCandidateItem({ att, onCheckout, isPending }) {
-  const [time, setTime] = useState(format(new Date(), "HH:mm"));
+  const [time, setTime] = useState(formatWIB(new Date(), "HH:mm"));
   const [isExpanding, setIsExpanding] = useState(false);
 
   return (
@@ -379,11 +378,11 @@ function CheckoutCandidateItem({ att, onCheckout, isPending }) {
             <div className="flex flex-wrap items-center gap-3 mt-1">
               <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-nav-text bg-slate-100 dark:bg-white/5 px-2.5 py-1 rounded-lg">
                 <Calendar size={10} className="text-orange-500" />
-                <span>{format(new Date(att.tanggal), "dd MMM yyyy", { locale: id })}</span>
+                <span>{formatWIB(att.tanggal, "dd MMM yyyy")}</span>
               </div>
               <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-nav-text bg-slate-100 dark:bg-white/5 px-2.5 py-1 rounded-lg">
                 <Clock size={10} className="text-orange-500" />
-                <span>Masuk: {format(new Date(att.jam_masuk), "HH:mm")} WIB</span>
+                <span>Masuk: {formatWIB(att.jam_masuk, "HH:mm")} WIB</span>
               </div>
               <span className="text-[10px] font-black uppercase text-nav-text opacity-40">{att.user.nip || "-"}</span>
             </div>

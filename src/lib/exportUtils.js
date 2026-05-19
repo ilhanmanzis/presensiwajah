@@ -2,8 +2,7 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
+import { formatWIB } from "@/lib/dateUtils";
 
 /**
  * Export Individual Attendance Report to PDF
@@ -11,7 +10,7 @@ import { id } from "date-fns/locale";
 export const exportIndividualPDF = (teacher, month, year, data, settings) => {
   try {
     const doc = new jsPDF();
-    const monthName = format(new Date(year, month - 1), "MMMM", { locale: id });
+    const monthName = formatWIB(new Date(year, month - 1, 1), "MMMM");
     const namaSekolah = settings?.nama_sistem || "Sistem Presensi";
 
     // 1. Kop Surat
@@ -84,9 +83,9 @@ export const exportIndividualPDF = (teacher, month, year, data, settings) => {
         tableRows.push([
           index + 1,
           row.dateStr,
-          row.masuk ? format(new Date(row.masuk.waktu), "HH:mm") : "-",
+          row.masuk ? formatWIB(row.masuk.waktu, "HH:mm") : "-",
           ketMasukItems.length > 0 ? ketMasukItems.join("\n") : "-",
-          row.pulang ? format(new Date(row.pulang.waktu), "HH:mm") : "-",
+          row.pulang ? formatWIB(row.pulang.waktu, "HH:mm") : "-",
           row.pulang?.catatan ? `- ${row.pulang.catatan}` : "-"
         ]);
       }
@@ -147,7 +146,7 @@ export const exportIndividualPDF = (teacher, month, year, data, settings) => {
 export const exportIndividualExcel = async (teacher, month, year, data, settings) => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet("Laporan Presensi");
-  const monthName = format(new Date(year, month - 1), "MMMM", { locale: id });
+  const monthName = formatWIB(new Date(year, month - 1, 1), "MMMM");
   const namaSekolah = settings?.nama_sistem || "Sistem Presensi";
 
   // Header & Styling
@@ -201,9 +200,9 @@ export const exportIndividualExcel = async (teacher, month, year, data, settings
       const newRow = worksheet.addRow([
         index + 1,
         row.dateStr,
-        row.masuk ? format(new Date(row.masuk.waktu), "HH:mm") : "-",
+        row.masuk ? formatWIB(row.masuk.waktu, "HH:mm") : "-",
         ketMasukItems.length > 0 ? ketMasukItems.join("\n") : "-",
-        row.pulang ? format(new Date(row.pulang.waktu), "HH:mm") : "-",
+        row.pulang ? formatWIB(row.pulang.waktu, "HH:mm") : "-",
         row.pulang?.catatan ? `- ${row.pulang.catatan}` : "-"
       ]);
       
@@ -242,7 +241,7 @@ export const exportIndividualExcel = async (teacher, month, year, data, settings
 export const exportRekapPDF = (month, year, data, settings) => {
   try {
     const doc = new jsPDF();
-    const monthName = format(new Date(year, month - 1), "MMMM", { locale: id });
+    const monthName = formatWIB(new Date(year, month - 1, 1), "MMMM");
     const namaSekolah = settings?.nama_sistem || "Sistem Presensi";
 
     doc.setFont("helvetica", "bold");
@@ -311,7 +310,7 @@ export const exportRekapPDF = (month, year, data, settings) => {
 export const exportRekapExcel = async (month, year, data, settings) => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet("Rekapitulasi Presensi");
-  const monthName = format(new Date(year, month - 1), "MMMM", { locale: id });
+  const monthName = formatWIB(new Date(year, month - 1, 1), "MMMM");
   const namaSekolah = settings?.nama_sistem || "Sistem Presensi";
 
   worksheet.mergeCells("A1:F1");

@@ -2,6 +2,7 @@
 
 import { PrismaClient } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { toUTCfromWIB } from "@/lib/dateUtils";
 
 const prisma = new PrismaClient();
 
@@ -56,8 +57,26 @@ export async function saveManualAttendance(formData) {
 
     if (status === "Hadir") {
       if (jamMasukStr) {
-        data.jam_masuk = new Date(`${tanggalStr}T${jamMasukStr}:00.000Z`);
-        data.ket_masuk = "Tepat Waktu";
+        data.jam_masuk = toUTCfromWIB(tanggalStr, jamMasukStr);
+        
+        let ketMasuk = "Tepat Waktu";
+        if (settings?.jam_masuk) {
+          const [hMasuk, mMasuk] = settings.jam_masuk.split(":").map(Number);
+          const [hInput, mInput] = jamMasukStr.split(":").map(Number);
+          const minutesInput = hInput * 60 + mInput;
+          const minutesMasuk = hMasuk * 60 + mMasuk;
+
+          if (minutesInput > minutesMasuk) {
+            const diff = minutesInput - minutesMasuk;
+            const hoursLate = Math.floor(diff / 60);
+            const minsLate = diff % 60;
+            ketMasuk = "Terlambat";
+            if (hoursLate > 0) ketMasuk += ` ${hoursLate} jam`;
+            if (minsLate > 0) ketMasuk += ` ${minsLate} menit`;
+          }
+        }
+        
+        data.ket_masuk = ketMasuk;
         data.lat_masuk = settings?.latitude;
         data.lng_masuk = settings?.longitude;
         data.catatan_masuk = "Di dalam radius";
@@ -65,7 +84,7 @@ export async function saveManualAttendance(formData) {
       }
       
       if (autoCheckout && jamPulangStr) {
-        data.jam_pulang = new Date(`${tanggalStr}T${jamPulangStr}:00.000Z`);
+        data.jam_pulang = toUTCfromWIB(tanggalStr, jamPulangStr);
         data.lat_pulang = settings?.latitude;
         data.lng_pulang = settings?.longitude;
         data.catatan_pulang = "Di dalam radius";
@@ -109,7 +128,7 @@ export async function processManualCheckout(formData) {
     });
 
     const tanggalStr = att.tanggal.toISOString().split('T')[0];
-    const jamPulang = new Date(`${tanggalStr}T${jamPulangStr}:00.000Z`);
+    const jamPulang = toUTCfromWIB(tanggalStr, jamPulangStr);
 
     await prisma.attendance.update({
       where: { id: attendanceId },

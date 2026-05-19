@@ -77,6 +77,12 @@ export async function savePresensiAction(latitude, longitude, isFaceMatched) {
   if (!existingAtt) {
     attendanceType = "MASUK";
   } else if (existingAtt.jam_masuk && !existingAtt.jam_pulang) {
+    // Safety check: cegah double-submission / check-out tak sengaja jika selisih waktu masuk < 30 detik
+    const selisihWaktu = Math.abs(now.getTime() - new Date(existingAtt.jam_masuk).getTime());
+    if (selisihWaktu < 30 * 1000) {
+      const sisaDetik = Math.ceil((30 * 1000 - selisihWaktu) / 1000);
+      return { error: `Silakan tunggu ${sisaDetik} detik untuk presensi pulang.` };
+    }
     attendanceType = "PULANG";
   } else {
     return { error: "Anda sudah menyelesaikan presensi hari ini (Masuk & Pulang)." };

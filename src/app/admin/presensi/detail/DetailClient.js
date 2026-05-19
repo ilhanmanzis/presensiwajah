@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
+import { formatWIB } from "@/lib/dateUtils";
 import { MapPin, UserCheck, Trash2, AlertCircle, MoreVertical } from "lucide-react";
 import MapWrapper from "./MapWrapper";
 import { deleteAttendanceAction } from "@/app/actions/admin";
@@ -145,7 +144,7 @@ export default function DetailClient({ attendanceId, teacher, dateStr, formatted
                 <div className="space-y-3 text-sm">
                   <div className="grid grid-cols-3 gap-2">
                     <span className="text-nav-text">Waktu</span>
-                    <span className="col-span-2 font-semibold text-foreground">: {masuk.waktu ? format(new Date(masuk.waktu), "HH:mm") : "-"} WIB</span>
+                    <span className="col-span-2 font-semibold text-foreground">: {masuk.waktu ? formatWIB(masuk.waktu, "HH:mm") : "-"} WIB</span>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <span className="text-nav-text">Latitude</span>
@@ -183,7 +182,7 @@ export default function DetailClient({ attendanceId, teacher, dateStr, formatted
                 <div className="space-y-3 text-sm">
                   <div className="grid grid-cols-3 gap-2">
                     <span className="text-nav-text">Waktu</span>
-                    <span className="col-span-2 font-semibold text-foreground">: {pulang.waktu ? format(new Date(pulang.waktu), "HH:mm") : "-"} WIB</span>
+                    <span className="col-span-2 font-semibold text-foreground">: {pulang.waktu ? formatWIB(pulang.waktu, "HH:mm") : "-"} WIB</span>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <span className="text-nav-text">Latitude</span>

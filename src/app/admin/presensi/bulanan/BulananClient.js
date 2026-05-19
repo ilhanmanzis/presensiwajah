@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
+import { formatWIB } from "@/lib/dateUtils";
 import { ChevronLeft, Calendar, UserCheck, AlertCircle, Search, ChevronDown, Eye, X, MapPin } from "lucide-react";
 import Link from "next/link";
 
@@ -139,7 +138,7 @@ export default function BulananClient({ teachers, initialTeacherId, initialMonth
         <div className="px-8 py-6 border-b border-surface-border flex items-center justify-between bg-surface">
           <h2 className="text-xl font-black text-foreground tracking-tight flex items-center gap-3">
             <div className="w-2 h-6 bg-brand-primary rounded-full"></div>
-            Data Presensi {format(new Date(initialYear, initialMonth - 1), "MMMM yyyy", { locale: id })}
+            Data Presensi {formatWIB(new Date(initialYear, initialMonth - 1, 1), "MMMM yyyy")}
           </h2>
         </div>
 
@@ -180,7 +179,7 @@ export default function BulananClient({ teachers, initialTeacherId, initialMonth
                       {data.masuk ? (
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-black text-foreground">{format(new Date(data.masuk.waktu), "HH:mm")}</span>
+                            <span className="text-sm font-black text-foreground">{formatWIB(data.masuk.waktu, "HH:mm")}</span>
                             <span className="text-[10px] font-bold text-nav-text opacity-60">WIB</span>
                           </div>
                           <div className="flex flex-wrap gap-1 mt-1">
@@ -204,7 +203,7 @@ export default function BulananClient({ teachers, initialTeacherId, initialMonth
                       {data.pulang ? (
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-black text-foreground">{format(new Date(data.pulang.waktu), "HH:mm")}</span>
+                            <span className="text-sm font-black text-foreground">{formatWIB(data.pulang.waktu, "HH:mm")}</span>
                             <span className="text-[10px] font-bold text-nav-text opacity-60">WIB</span>
                           </div>
                           <div className="flex flex-wrap gap-1 mt-1">
@@ -232,7 +231,7 @@ export default function BulananClient({ teachers, initialTeacherId, initialMonth
                     </td>
                     <td className="px-6 py-4 border-b border-surface-border text-center">
                       <button
-                        onClick={() => router.push(`/admin/presensi/detail?teacherId=${selectedTeacher}&date=${format(new Date(data.date), "yyyy-MM-dd")}`)}
+                        onClick={() => router.push(`/admin/presensi/detail?teacherId=${selectedTeacher}&date=${formatWIB(data.date, "yyyy-MM-dd")}`)}
                         className="cursor-pointer p-2 bg-brand-primary/10 hover:bg-brand-primary text-brand-primary hover:text-white rounded-xl transition-colors inline-flex items-center justify-center"
                         title="Lihat Detail"
                       >

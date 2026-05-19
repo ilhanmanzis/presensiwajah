@@ -1,8 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { getSession } from "@/lib/auth";
 import { User, Mail, CreditCard, Calendar, LogOut } from "lucide-react";
-import { format } from "date-fns";
-import { id as localeId } from "date-fns/locale";
 import { logoutAction } from "@/app/actions/auth";
 
 const prisma = new PrismaClient();
