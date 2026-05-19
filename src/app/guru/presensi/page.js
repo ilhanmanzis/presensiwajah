@@ -17,8 +17,16 @@ export default async function GuruPresensiPage() {
     where: { id: "global" }
   });
 
-  const targetDate = new Date();
-  targetDate.setUTCHours(0,0,0,0);
+  const now = new Date();
+  const jakartaFormatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+  const parts = jakartaFormatter.formatToParts(now);
+  const getValue = (type) => parts.find(p => p.type === type).value;
+  const targetDate = new Date(`${getValue('year')}-${getValue('month')}-${getValue('day')}T00:00:00.000Z`);
 
   const todayAttendances = await prisma.attendance.findMany({
     where: {
