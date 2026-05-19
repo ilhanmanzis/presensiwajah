@@ -5,7 +5,20 @@ const prisma = new PrismaClient();
 
 export default async function AdminPresensiPage({ searchParams }) {
   const params = await searchParams;
-  const dateStr = params.date || new Date().toISOString().split('T')[0];
+  let dateStr = params.date;
+  if (!dateStr) {
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Jakarta",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    });
+    const parts = formatter.formatToParts(new Date());
+    const year = parts.find(p => p.type === "year").value;
+    const month = parts.find(p => p.type === "month").value;
+    const day = parts.find(p => p.type === "day").value;
+    dateStr = `${year}-${month}-${day}`;
+  }
   
   const targetDate = new Date(`${dateStr}T00:00:00.000Z`);
 

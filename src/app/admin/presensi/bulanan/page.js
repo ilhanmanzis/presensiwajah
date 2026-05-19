@@ -1,14 +1,15 @@
 import { PrismaClient } from "@prisma/client";
 import { startOfMonth, endOfMonth, getDaysInMonth } from "date-fns";
-import { formatWIB } from "@/lib/dateUtils";
+import { formatWIB, getJakartaParts } from "@/lib/dateUtils";
 import BulananClient from "./BulananClient";
 
 const prisma = new PrismaClient();
 
 export default async function MonthlyAttendancePage({ searchParams }) {
   const params = await searchParams;
-  const month = params.month ? parseInt(params.month) : new Date().getMonth() + 1;
-  const year = params.year ? parseInt(params.year) : new Date().getFullYear();
+  const { month: currentMonth, year: currentYear } = getJakartaParts(new Date());
+  const month = params.month ? parseInt(params.month) : currentMonth;
+  const year = params.year ? parseInt(params.year) : currentYear;
   const teacherId = params.teacherId || null;
 
   // Fetch all teachers for the dropdown
