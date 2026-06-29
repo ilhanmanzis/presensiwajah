@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useTransition } from "react";
-import { Camera, CheckCircle, AlertCircle, Save, X, ZoomIn, ZoomOut, Info, RefreshCw, Trash2, Edit2, UserCheck, ShieldAlert, User, Search, AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, Lock, Eye, EyeOff, Upload, FileImage, Image } from "lucide-react";
+import { Camera, CheckCircle, AlertCircle, Save, X, ZoomIn, ZoomOut, Info, RefreshCw, Trash2, Edit2, UserCheck, ShieldAlert, User, Search, AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, Lock, Eye, EyeOff, Upload, FileImage, Image, Users } from "lucide-react";
 import { enrollFaceAction, deleteFaceAction } from "@/app/actions/admin";
 
 export default function EnrollmentClient({ users }) {
@@ -40,6 +40,9 @@ export default function EnrollmentClient({ users }) {
   const [uploadError, setUploadError] = useState("");
   const [isProcessingFile, setIsProcessingFile] = useState(false);
 
+  // Multiple face detection
+  const [multipleFaces, setMultipleFaces] = useState(false);
+
 
 
   // Zoom management
@@ -65,6 +68,7 @@ export default function EnrollmentClient({ users }) {
       streamRef.current = null;
     }
     setIsScanning(false);
+    setMultipleFaces(false);
   }, []);
 
   // Click outside to close dropdown
@@ -109,6 +113,7 @@ export default function EnrollmentClient({ users }) {
     setIsScanning(true);
     setInstruction("Menginisialisasi Kamera...");
     setInstructionColor("text-white");
+    setMultipleFaces(false);
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -178,17 +183,28 @@ export default function EnrollmentClient({ users }) {
     }
 
     try {
-      const detection = await faceapi.detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
+      // Use detectAllFaces to check for multiple people
+      const allDetections = await faceapi.detectAllFaces(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
         .withFaceLandmarks()
-        .withFaceDescriptor();
+        .withFaceDescriptors();
 
       if (!isScanning || !videoRef.current) return;
 
-      if (!detection) {
+      if (!allDetections || allDetections.length === 0) {
+        setMultipleFaces(false);
         setInstruction("Perlihatkan wajah ke kamera");
         setInstructionColor("text-red-400");
         stabilityCounter.current = 0;
+      } else if (allDetections.length > 1) {
+        // Multiple faces detected — block registration
+        setMultipleFaces(true);
+        setInstruction("Terdeteksi lebih dari 1 orang!");
+        setInstructionColor("text-red-400");
+        stabilityCounter.current = 0;
       } else {
+        // Exactly 1 face detected
+        setMultipleFaces(false);
+        const detection = allDetections[0];
         const box = detection.detection.box;
         const videoWidth = video.videoWidth;
         const videoHeight = video.videoHeight;
@@ -217,7 +233,7 @@ export default function EnrollmentClient({ users }) {
           setInstruction("Kurang pencahayaan / Cahaya terlalu gelap");
           setInstructionColor("text-yellow-400");
           stabilityCounter.current = 0;
-        } else if (distFromCenter > 0.15) {
+        } else if (distFromCenter > 0.25) {
           setInstruction("Posisikan wajah di tengah bingkai");
           setInstructionColor("text-orange-400");
           stabilityCounter.current = 0;
@@ -766,29 +782,7 @@ export default function EnrollmentClient({ users }) {
               className="w-full h-full object-cover transition-transform duration-300"
             />
 
-            <div className="absolute inset-0 pointer-events-none z-[1000]">
-              <svg className="w-full h-full">
-                <defs>
-                  <mask id="overlay-mask">
-                    <rect width="100%" height="100%" fill="white" />
-                    <ellipse cx="50%" cy="45%" rx="min(38%, 220px)" ry="min(45%, 350px)" fill="black" />
-                  </mask>
-                </defs>
-                <rect width="100%" height="100%" fill="rgba(0,0,0,0.8)" mask="url(#overlay-mask)" />
-                <ellipse
-                  cx="50%"
-                  cy="45%"
-                  rx="min(38%, 220px)"
-                  ry="min(45%, 350px)"
-                  fill="none"
-                  stroke="cyan"
-                  strokeWidth="4"
-                  strokeDasharray="10 5"
-                  className="animate-spin-slow"
-                />
-              </svg>
-            </div>
-
+            {/* Instruction Text (no oval overlay) */}
             <div className="absolute top-[10%] left-0 right-0 text-center px-6 z-[1001]">
               <div className="inline-block px-6 py-4 bg-black/60 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl scale-in-95 animate-in">
                 <h3 className={`text-2xl md:text-3xl font-black uppercase tracking-tighter drop-shadow-2xl ${instructionColor} transition-all duration-300`}>
@@ -796,6 +790,19 @@ export default function EnrollmentClient({ users }) {
                 </h3>
               </div>
             </div>
+
+            {/* Multiple faces warning */}
+            {multipleFaces && (
+              <div className="absolute top-[22%] left-0 right-0 text-center px-6 z-[1001] animate-in fade-in zoom-in-95 duration-300">
+                <div className="inline-flex items-center gap-3 px-6 py-3 bg-red-600/80 backdrop-blur-xl rounded-2xl border border-red-400/30 shadow-2xl">
+                  <Users size={24} className="text-white flex-shrink-0" />
+                  <div className="text-left">
+                    <p className="text-white font-bold text-sm">Hanya boleh 1 orang di depan kamera!</p>
+                    <p className="text-red-200 text-xs">Pastikan tidak ada orang lain di sekitar Anda.</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="absolute bottom-12 flex gap-8 z-[1001]">
               <button
@@ -813,20 +820,28 @@ export default function EnrollmentClient({ users }) {
             </div>
 
             {stabilityCounter.current > 0 && (
-              <div className="absolute bottom-[25%] z-[1001] animate-in zoom-in">
-                <div className="w-32 h-32 border-8 border-white/10 rounded-full flex items-center justify-center relative">
-                  <svg className="absolute inset-0 w-full h-full -rotate-90">
-                    <circle
-                      cx="64" cy="64" r="56"
-                      fill="none" stroke="currentColor" strokeWidth="8"
-                      className="text-cyan-400 transition-all duration-200"
-                      strokeDasharray="351.8"
-                      strokeDashoffset={351.8 - (stabilityCounter.current * (351.8 / 20))}
-                    />
-                  </svg>
-                  <span className="text-white font-black text-3xl drop-shadow-lg">
-                    {Math.max(1, 3 - Math.floor(stabilityCounter.current / 7))}
-                  </span>
+              <div className="absolute bottom-28 left-0 right-0 flex justify-center z-[1001] animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center gap-4 px-8 py-4 bg-black/60 backdrop-blur-xl rounded-2xl border border-cyan-400/30 shadow-2xl">
+                  <div className="relative w-12 h-12 flex items-center justify-center">
+                    <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 48 48">
+                      <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="4" />
+                      <circle
+                        cx="24" cy="24" r="20"
+                        fill="none" stroke="currentColor" strokeWidth="4"
+                        className="text-cyan-400 transition-all duration-200"
+                        strokeLinecap="round"
+                        strokeDasharray="125.6"
+                        strokeDashoffset={125.6 - (stabilityCounter.current * (125.6 / 21))}
+                      />
+                    </svg>
+                    <span className="text-white font-black text-lg drop-shadow-lg">
+                      {Math.max(1, 3 - Math.floor(stabilityCounter.current / 7))}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-cyan-400 font-bold text-sm">Tahan posisi...</p>
+                    <p className="text-white/50 text-xs">Jangan bergerak</p>
+                  </div>
                 </div>
               </div>
             )}

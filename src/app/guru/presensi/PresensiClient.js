@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { MapPin, Camera, CheckCircle, AlertCircle, XCircle } from "lucide-react";
+import { MapPin, Camera, CheckCircle, AlertCircle, XCircle, Users } from "lucide-react";
 import dynamic from "next/dynamic";
 import { savePresensiAction } from "@/app/actions/guru";
 import { useRouter } from "next/navigation";
@@ -38,6 +38,8 @@ export default function PresensiClient({ savedDescriptor, settings, initialAtten
   const [faceStatus, setFaceStatus] = useState("Kamera belum aktif");
   const [isProcessing, setIsProcessing] = useState(false);
   const [cameraPermission, setCameraPermission] = useState("prompt");
+  const [multipleFaces, setMultipleFaces] = useState(false);
+  const [presensiSuccess, setPresensiSuccess] = useState(false);
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -140,6 +142,7 @@ export default function PresensiClient({ savedDescriptor, settings, initialAtten
     isSubmittingRef.current = false;
     setIsCameraActive(true);
     setFaceStatus("Menunggu kamera...");
+    setMultipleFaces(false);
   };
 
   const stopCamera = () => {
@@ -148,6 +151,7 @@ export default function PresensiClient({ savedDescriptor, settings, initialAtten
     streamRef.current = null;
     setIsCameraActive(false);
     setFaceStatus("Kamera nonaktif.");
+    setMultipleFaces(false);
   };
 
   // Camera initialization effect
@@ -181,8 +185,22 @@ export default function PresensiClient({ savedDescriptor, settings, initialAtten
     const faceapi = faceapiRef.current;
     if (!videoRef.current || !savedDescriptor || !faceapi || !isCameraActive || isProcessing || isSubmittingRef.current) return;
     try {
-      const detection = await faceapi.detectSingleFace(videoRef.current, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.7 })).withFaceLandmarks().withFaceDescriptor();
-      if (detection) {
+      // Use detectAllFaces to check for multiple people
+      const allDetections = await faceapi.detectAllFaces(videoRef.current, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.7 }))
+        .withFaceLandmarks()
+        .withFaceDescriptors();
+
+      if (!allDetections || allDetections.length === 0) {
+        setMultipleFaces(false);
+        setFaceStatus("Wajah tidak terdeteksi...");
+      } else if (allDetections.length > 1) {
+        // Multiple faces detected — block verification
+        setMultipleFaces(true);
+        setFaceStatus("Terdeteksi lebih dari 1 orang!");
+      } else {
+        // Exactly 1 face — proceed with verification
+        setMultipleFaces(false);
+        const detection = allDetections[0];
         const savedFloatArray = new Float32Array(savedDescriptor);
         const distance = faceapi.euclideanDistance(detection.descriptor, savedFloatArray);
         if (distance < 0.45) {
@@ -191,8 +209,10 @@ export default function PresensiClient({ savedDescriptor, settings, initialAtten
           setFaceStatus("Wajah Cocok! Menyimpan...");
           const res = await savePresensiAction(userPos.lat, userPos.lng, true);
           if (res.success) {
-            setFaceStatus("Presensi Berhasil!");
-            setTimeout(() => { stopCamera(); router.push("/guru"); }, 2000);
+            // Immediately stop camera to prevent re-scanning
+            stopCamera();
+            setPresensiSuccess(true);
+            setTimeout(() => { router.push("/guru"); }, 2000);
           } else {
             setFaceStatus(`Gagal: ${res.error}`);
             setIsProcessing(false);
@@ -201,8 +221,6 @@ export default function PresensiClient({ savedDescriptor, settings, initialAtten
         } else {
           setFaceStatus("Wajah tidak cocok, coba lagi.");
         }
-      } else {
-        setFaceStatus("Wajah tidak terdeteksi...");
       }
     } catch (e) {
       console.error(e);
@@ -345,14 +363,41 @@ export default function PresensiClient({ savedDescriptor, settings, initialAtten
               playsInline
               className="absolute inset-0 w-full h-full object-cover scale-x-[-1]"
             />
-            <div className="relative z-10 flex flex-col items-center justify-center">
-              <div className="w-64 h-80 md:w-80 md:h-96 border-4 border-white/40 rounded-[60px] relative">
-                <div className="absolute inset-0 border-2 border-white/20 rounded-[58px] animate-[pulse_2s_infinite]" />
-              </div>
-              <div className="mt-10 px-8 py-4 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl flex items-center gap-4">
+
+            {/* Status text at bottom */}
+            <div className="absolute bottom-20 left-0 right-0 flex justify-center z-10 px-6">
+              <div className="px-8 py-4 bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl flex items-center gap-4">
                 {isProcessing ? <div className="w-6 h-6 border-3 border-white/20 border-t-white rounded-full animate-spin" /> : <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse" />}
                 <span className="text-white font-bold text-lg">{faceStatus}</span>
               </div>
+            </div>
+
+            {/* Multiple faces warning */}
+            {multipleFaces && (
+              <div className="absolute top-28 left-0 right-0 flex justify-center z-10 px-6 animate-in fade-in zoom-in-95 duration-300">
+                <div className="inline-flex items-center gap-3 px-6 py-3 bg-red-600/80 backdrop-blur-xl rounded-2xl border border-red-400/30 shadow-2xl">
+                  <Users size={24} className="text-white flex-shrink-0" />
+                  <div className="text-left">
+                    <p className="text-white font-bold text-sm">Hanya boleh 1 orang di depan kamera!</p>
+                    <p className="text-red-200 text-xs">Pastikan tidak ada orang lain di sekitar Anda.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Success Overlay */}
+      {presensiSuccess && (
+        <div className="fixed inset-0 z-[200] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
+          <div className="flex flex-col items-center gap-6 animate-in zoom-in-95 duration-500">
+            <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center">
+              <CheckCircle size={56} className="text-green-400" />
+            </div>
+            <div className="text-center">
+              <h3 className="text-white text-2xl font-black">Presensi Berhasil!</h3>
+              <p className="text-white/50 text-sm mt-2">Mengalihkan ke halaman utama...</p>
             </div>
           </div>
         </div>
